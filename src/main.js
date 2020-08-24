@@ -1,8 +1,11 @@
+import api from './api';
+
 class App {
     constructor() {
         this.repositories = [];
 
         this.formEl = document.getElementById('repo-form');
+        this.inputEl = document.querySelector('input');
         this.listEl = document.getElementById('repo-list');
         this.registerHandlers();
     }
@@ -11,17 +14,48 @@ class App {
         this.formEl.onsubmit = event => this.addRepository(event);
     }
 
-    addRepository(event) {
-        event.preventDefault();
-        this.repositories.push({
-            name: 'SimpleSiteBuilder',
-            description: "This is a simple App Site Builder, where you can change the color, background, images, links and texts",
-            avatar_url: 'https://avatars3.githubusercontent.com/u/41977327?v=4',
-            html_url: 'https://github.com/PedroRorato/SimpleSiteBuilder'
-        });
+    setLoading(loading =true) {
+        
+        if(loading == true){
+            let loadingEl = document.createElement('span');
+            loadingEl.appendChild(document.createTextNode('Loading...'));
+            loadingEl.setAttribute('id', 'loading')
+            this.formEl.appendChild(loadingEl);
+        } else{
+            document.getElementById('loading').remove();
+        }
+    }
 
-        console.log(this.repositories);
-        this.render();
+    async addRepository(event) {
+        event.preventDefault();
+
+        const inputValue = this.inputEl.value;
+
+        if(inputValue.length === 0) {
+            alert('Please, write the user name!');
+            return;
+        }
+
+        this.setLoading();
+
+        try {
+            const response = await api.get(`/users/${inputValue}/repos`);
+            this.repositories = [];
+            response.data.forEach(item => {
+                const { name, description, html_url, owner: {avatar_url} } = item;
+                this.repositories.push({
+                    name,
+                    description,
+                    avatar_url,
+                    html_url
+                });
+            });
+            this.render();
+        } catch(err) {
+            alert("We haven't found the user! Please check the name informed!");
+        }
+
+        this.setLoading(false);
     }
 
     render(){
